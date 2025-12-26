@@ -1,13 +1,1306 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html lang="th">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>my-ultraman-game</title>
+    <title>Galaxy Hero Quiz Battle: Look-Kid Style</title>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Sarabun:wght@400;700&display=swap");
+
+      :root {
+        --hero-color: #ff3333;
+        --hero-secondary: #c0c0c0;
+        --enemy-color: #5d3fd3;
+        --ui-bg: #2c3e50;
+        --ui-border: #f1c40f;
+        --font-main: "Sarabun", sans-serif;
+        --font-pixel: "Press Start 2P", cursive;
+      }
+
+      body {
+        margin: 0;
+        padding: 0;
+        background-color: #222;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        font-family: var(--font-main);
+        overflow: hidden;
+        user-select: none;
+      }
+
+      #game-wrapper {
+        position: relative;
+        width: 800px;
+        height: 600px;
+        background: linear-gradient(
+          to bottom,
+          #87ceeb 0%,
+          #e0f7fa 70%,
+          #607d8b 70%,
+          #37474f 100%
+        );
+        border: 4px solid #fff;
+        box-shadow: 0 0 30px rgba(0, 0, 0, 0.8);
+        overflow: hidden;
+      }
+
+      /* --- BACKGROUND DECORATION (CITY) --- */
+      .city-bg {
+        position: absolute;
+        bottom: 30%;
+        width: 100%;
+        height: 200px;
+        background-repeat: repeat-x;
+        background-position: bottom;
+        opacity: 0.8;
+        background-image: linear-gradient(
+            to top,
+            #555 0%,
+            #555 20%,
+            transparent 20%
+          ),
+          linear-gradient(to top, #666 0%, #666 40%, transparent 40%),
+          linear-gradient(to top, #444 0%, #444 60%, transparent 60%);
+        background-size: 50px 100%, 30px 100%, 70px 100%;
+        z-index: 0;
+      }
+
+      /* --- TOP HUD (Status Bars) --- */
+      #hud {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        padding: 15px;
+        box-sizing: border-box;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        z-index: 10;
+      }
+
+      .status-box {
+        width: 280px;
+        background: rgba(0, 0, 0, 0.8);
+        border: 2px solid #fff;
+        border-radius: 8px;
+        padding: 10px;
+        color: white;
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+      }
+
+      .name-tag {
+        font-family: var(--font-pixel);
+        font-size: 12px;
+        margin-bottom: 2px;
+        display: flex;
+        justify-content: space-between;
+        color: #f1c40f;
+      }
+
+      /* HP BAR */
+      .bar-frame {
+        width: 100%;
+        height: 15px;
+        background-color: #333;
+        border: 1px solid #fff;
+        border-radius: 4px;
+        overflow: hidden;
+        position: relative;
+      }
+      .hp-fill {
+        height: 100%;
+        width: 100%;
+        transition: width 0.3s ease-out;
+        background: linear-gradient(90deg, #e74c3c, #c0392b);
+      }
+
+      /* ENERGY BAR (New Feature) */
+      .energy-frame {
+        width: 100%;
+        height: 10px;
+        background-color: #222;
+        border: 1px solid #7f8c8d;
+        border-radius: 4px;
+        overflow: hidden;
+        margin-top: 5px;
+      }
+      .energy-fill {
+        height: 100%;
+        width: 0%; /* Starts empty */
+        background: linear-gradient(90deg, #00b09b, #96c93d);
+        transition: width 0.3s ease-out;
+        box-shadow: 0 0 10px #96c93d;
+      }
+      .energy-text {
+        font-size: 10px;
+        text-align: center;
+        color: #00ff00;
+        margin-top: 2px;
+      }
+
+      /* --- TIMER --- */
+      #timer-container {
+        position: absolute;
+        top: 60px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 200px;
+        text-align: center;
+        z-index: 10;
+      }
+      #timer-text {
+        font-family: var(--font-pixel);
+        color: #fff;
+        font-size: 24px;
+        text-shadow: 2px 2px #000;
+      }
+      .timer-warning {
+        color: red !important;
+        animation: blink 0.5s infinite;
+      }
+
+      @keyframes blink {
+        50% {
+          opacity: 0;
+        }
+      }
+
+      /* --- CHARACTERS (CSS Art) --- */
+      .character-container {
+        position: absolute;
+        bottom: 30%;
+        width: 120px;
+        height: 180px;
+        z-index: 5;
+        transition: transform 0.2s;
+      }
+
+      #hero {
+        left: 100px;
+      }
+      #enemy {
+        right: 100px;
+        transform: scaleX(-1);
+      }
+
+      /* Hero Sprite */
+      .sprite-body {
+        width: 60px;
+        height: 100px;
+        background: var(--hero-secondary);
+        margin: 0 auto;
+        position: relative;
+        top: 40px;
+        border-radius: 10px;
+      }
+      .sprite-head {
+        width: 50px;
+        height: 60px;
+        background: var(--hero-secondary);
+        border-radius: 25px 25px 40px 40px;
+        position: absolute;
+        top: -50px;
+        left: 5px;
+      }
+      .sprite-eye {
+        width: 15px;
+        height: 15px;
+        background: #f1c40f;
+        border-radius: 50%;
+        position: absolute;
+        top: 20px;
+        box-shadow: 0 0 5px #f1c40f;
+      }
+      .eye-left {
+        left: 8px;
+      }
+      .eye-right {
+        right: 8px;
+      }
+      .sprite-timer {
+        width: 15px;
+        height: 15px;
+        background: #3498db;
+        border-radius: 50%;
+        position: absolute;
+        top: 30px;
+        left: 22px;
+        border: 2px solid silver;
+        box-shadow: 0 0 5px #3498db;
+      }
+      .timer-critical {
+        background: red;
+        animation: blink 0.3s infinite;
+        box-shadow: 0 0 10px red;
+      }
+
+      .sprite-pattern {
+        width: 100%;
+        height: 40px;
+        background: var(--hero-color);
+        position: absolute;
+        top: 20px;
+      }
+
+      /* Enemy Sprite */
+      #enemy .sprite-body {
+        background: #2e7d32;
+        border-radius: 50% 50% 10px 10px;
+        width: 100px;
+        top: 50px;
+      }
+      #enemy .sprite-head {
+        background: #2e7d32;
+        width: 70px;
+        height: 50px;
+        top: -40px;
+        left: 15px;
+        border-radius: 10px;
+      }
+      #enemy .sprite-eye {
+        background: #fff;
+        width: 20px;
+        height: 10px;
+        border-radius: 0;
+        top: 15px;
+        box-shadow: none;
+      }
+      #enemy .sprite-horn {
+        width: 0;
+        height: 0;
+        border-left: 10px solid transparent;
+        border-right: 10px solid transparent;
+        border-bottom: 30px solid #f1c40f;
+        position: absolute;
+        top: -25px;
+        left: 25px;
+      }
+
+      /* Finisher Aura */
+      .finisher-aura {
+        filter: drop-shadow(0 0 20px gold);
+        animation: powerSurge 0.5s infinite alternate;
+      }
+      @keyframes powerSurge {
+        from {
+          transform: scale(1);
+        }
+        to {
+          transform: scale(1.1);
+        }
+      }
+
+      /* Animations */
+      .attack-charge {
+        animation: chargePose 0.5s forwards;
+      }
+      @keyframes chargePose {
+        0% {
+          transform: scale(1);
+        }
+        50% {
+          transform: scale(1.1) translateY(-10px);
+          filter: brightness(1.5);
+        }
+        100% {
+          transform: scale(1);
+        }
+      }
+
+      .attack-dash {
+        animation: lungRight 0.5s forwards;
+      }
+      .enemy-dash {
+        animation: lungLeft 0.5s forwards;
+      }
+      .damage-shake {
+        animation: shake 0.4s;
+      }
+
+      /* Effects */
+      .beam-effect {
+        position: absolute;
+        left: 100px;
+        top: 50px;
+        width: 0;
+        height: 10px;
+        background: cyan;
+        box-shadow: 0 0 10px white;
+        z-index: 6;
+        opacity: 0;
+      }
+      .spacium-beam {
+        height: 40px;
+        background: linear-gradient(to bottom, white, cyan, blue);
+        box-shadow: 0 0 20px cyan;
+        border-radius: 10px;
+      }
+
+      @keyframes shake {
+        0%,
+        100% {
+          transform: translate(0, 0);
+        }
+        20% {
+          transform: translate(-10px, 0);
+        }
+        40% {
+          transform: translate(10px, 0);
+        }
+      }
+      @keyframes beamShoot {
+        0% {
+          width: 0;
+          opacity: 1;
+          left: 80px;
+        }
+        50% {
+          width: 500px;
+          opacity: 1;
+        }
+        100% {
+          width: 500px;
+          opacity: 0;
+          left: 600px;
+        }
+      }
+      @keyframes spaciumShoot {
+        0% {
+          width: 0;
+          opacity: 1;
+          left: 80px;
+        }
+        20% {
+          width: 600px;
+          opacity: 1;
+        }
+        80% {
+          width: 600px;
+          opacity: 1;
+        }
+        100% {
+          width: 600px;
+        }
+      }
+
+      /* --- BOTTOM PANEL (SPLIT UI) --- */
+      #quiz-panel {
+        position: absolute;
+        bottom: 0;
+        width: 100%;
+        height: 220px;
+        display: flex;
+        gap: 10px;
+        padding: 10px;
+        box-sizing: border-box;
+        z-index: 20;
+      }
+
+      #quiz-left {
+        flex: 2; /* 66% width */
+        background-color: var(--ui-bg);
+        border: 3px solid var(--ui-border);
+        border-radius: 10px;
+        padding: 15px;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        position: relative;
+      }
+
+      #action-right {
+        flex: 1; /* 33% width */
+        background-color: rgba(44, 62, 80, 0.9);
+        border: 3px solid var(--ui-border);
+        border-radius: 10px;
+        padding: 10px;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        justify-content: center;
+        align-items: center;
+      }
+
+      #question-display {
+        width: 100%;
+        background: #fff;
+        padding: 10px;
+        border-radius: 5px;
+        font-size: 18px;
+        font-weight: bold;
+        color: #333;
+        margin-bottom: 10px;
+        text-align: center;
+        border: 2px solid #333;
+        box-sizing: border-box;
+        height: 50px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      #options-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        width: 100%;
+        flex-grow: 1;
+      }
+
+      .option-btn {
+        background: #34495e;
+        color: white;
+        border: 2px solid #7f8c8d;
+        border-radius: 5px;
+        font-size: 16px;
+        font-family: var(--font-main);
+        cursor: pointer;
+        transition: all 0.1s;
+      }
+      .option-btn:hover {
+        background: #1abc9c;
+      }
+
+      /* ACTION BUTTONS */
+      .action-btn {
+        width: 100%;
+        height: 60px;
+        font-family: var(--font-pixel);
+        font-size: 14px;
+        color: white;
+        border: 3px solid #fff;
+        border-radius: 8px;
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        transition: all 0.2s;
+        text-shadow: 2px 2px #000;
+      }
+
+      #btn-attack {
+        background: linear-gradient(to bottom, #e74c3c, #c0392b);
+        opacity: 0.5;
+        pointer-events: none; /* Disabled by default */
+      }
+      #btn-attack.ready {
+        opacity: 1;
+        pointer-events: auto;
+        box-shadow: 0 0 15px #e74c3c;
+      }
+      #btn-attack:active {
+        transform: scale(0.95);
+      }
+
+      #btn-finisher {
+        background: linear-gradient(to bottom, #f1c40f, #f39c12);
+        opacity: 0.5;
+        pointer-events: none; /* Disabled by default */
+        display: none; /* Hidden until condition met */
+      }
+      #btn-finisher.ready {
+        opacity: 1;
+        pointer-events: auto;
+        box-shadow: 0 0 20px gold;
+        animation: pulseBtn 1s infinite;
+      }
+
+      .cost-badge {
+        font-size: 10px;
+        background: rgba(0, 0, 0, 0.5);
+        padding: 2px 5px;
+        border-radius: 4px;
+        margin-top: 5px;
+      }
+
+      @keyframes pulseBtn {
+        0% {
+          transform: scale(1);
+        }
+        50% {
+          transform: scale(1.05);
+        }
+        100% {
+          transform: scale(1);
+        }
+      }
+
+      /* --- OVERLAYS --- */
+      .overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.9);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        z-index: 100;
+        color: white;
+        font-family: var(--font-pixel);
+        text-align: center;
+      }
+      .hidden {
+        display: none !important;
+      }
+
+      .finisher-alert {
+        position: absolute;
+        top: 40%;
+        width: 100%;
+        text-align: center;
+        font-family: var(--font-pixel);
+        color: #f1c40f;
+        font-size: 30px;
+        text-shadow: 2px 2px red;
+        animation: pulse 0.5s infinite;
+        z-index: 50;
+        pointer-events: none;
+      }
+
+      @keyframes pulse {
+        0% {
+          transform: scale(1);
+        }
+        50% {
+          transform: scale(1.1);
+        }
+        100% {
+          transform: scale(1);
+        }
+      }
+
+      .point-float {
+        position: absolute;
+        color: #f1c40f;
+        font-family: var(--font-pixel);
+        font-size: 24px;
+        animation: floatUp 1s forwards;
+        z-index: 50;
+        text-shadow: 2px 2px #000;
+      }
+      @keyframes floatUp {
+        0% {
+          transform: translateY(0);
+          opacity: 1;
+        }
+        100% {
+          transform: translateY(-50px);
+          opacity: 0;
+        }
+      }
+      /* HUD refined */
+      .status-box {
+        width: 280px;
+        background: rgba(0, 0, 0, 0.8);
+        border: 2px solid #fff;
+        border-radius: 8px;
+        padding: 10px;
+        color: white;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+      .hp-group {
+        margin-bottom: 5px;
+      }
+      .bar-frame {
+        width: 100%;
+        height: 18px;
+        background: #333;
+        border: 1px solid #fff;
+        border-radius: 4px;
+        overflow: hidden;
+        position: relative;
+      }
+      .hp-fill {
+        height: 100%;
+        width: 100%;
+        background: linear-gradient(90deg, #e74c3c, #c0392b);
+        transition: width 0.3s ease-out;
+      }
+
+      .time-group {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-top: -2px;
+      }
+      .time-bar-frame {
+        width: 100%;
+        height: 6px;
+        background: #222;
+        border: 1px solid #777;
+        border-radius: 2px;
+        overflow: hidden;
+      }
+      .time-bar-fill {
+        height: 100%;
+        width: 0%;
+        background: #f1c40f;
+        transition: width 0.1s linear;
+        box-shadow: 0 0 5px #f1c40f;
+      }
+      .enemy-time-fill {
+        background: #e74c3c;
+        box-shadow: 0 0 5px #e74c3c;
+      }
+
+      .point-display {
+        margin-top: 5px;
+        font-size: 14px;
+        color: #2ecc71;
+        text-align: center;
+        border-top: 1px solid #555;
+        padding-top: 5px;
+        font-family: var(--font-pixel);
+      }
+    </style>
   </head>
   <body>
-    <div id="app"></div>
-    <script type="module" src="/src/main.ts"></script>
+    <div id="game-wrapper">
+      <div class="city-bg"></div>
+
+      <div id="start-screen" class="overlay">
+        <h1
+          style="
+            color: #f1c40f;
+            text-shadow: 4px 4px #c0392b;
+            font-size: 40px;
+            margin-bottom: 20px;
+          "
+        >
+          ULTRA QUIZ<br />BATTLE
+        </h1>
+        <p style="font-family: 'Sarabun'; color: #ddd; margin-bottom: 30px">
+          ระบบต่อสู้แบบ Active Time!<br />
+          เกจเต็ม = ตอบคำถาม (หยุดเวลาศัตรู)<br />
+          ตอบถูก: ชาร์จไวขึ้น | ตอบผิด: ชาร์จช้าลง<br />
+          สะสมแต้มเพื่อโจมตี!
+        </p>
+        <button
+          onclick="showSelectionScreen()"
+          style="
+            padding: 15px 30px;
+            font-size: 20px;
+            background: #e74c3c;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-family: var(--font-pixel);
+          "
+        >
+          START GAME
+        </button>
+      </div>
+
+      <!-- Character Selection Screen -->
+      <div id="selection-screen" class="overlay hidden">
+        <h2
+          style="
+            color: #f1c40f;
+            text-shadow: 2px 2px #c0392b;
+            margin-bottom: 30px;
+          "
+        >
+          CHOOSE YOUR HERO
+        </h2>
+        <div
+          id="char-grid"
+          style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px"
+        >
+          <!-- Generated by JS -->
+        </div>
+      </div>
+
+      <!-- Finisher Alert Text -->
+      <div id="finisher-text" class="finisher-alert hidden">
+        FINISH HIM!!<br /><span style="font-size: 16px; font-family: 'Sarabun'"
+          >กดใช้ท่าไม้ตายเลย!</span
+        >
+      </div>
+
+      <!-- End Screen -->
+      <div id="end-screen" class="overlay hidden">
+        <h1 id="end-title" style="font-size: 40px; margin-bottom: 10px"></h1>
+        <p
+          id="end-msg"
+          style="font-family: 'Sarabun'; font-size: 20px; margin-bottom: 20px"
+        ></p>
+        <button
+          onclick="location.reload()"
+          style="padding: 10px 20px; font-size: 18px; cursor: pointer"
+        >
+          PLAY AGAIN
+        </button>
+      </div>
+
+      <div id="hud">
+        <!-- Hero Status -->
+        <div class="status-box">
+          <div class="name-tag">
+            <span id="hero-name">GALAXY HERO</span>
+            <span id="hero-hp-text">100/100</span>
+          </div>
+
+          <div class="hp-group">
+            <div class="bar-frame">
+              <div id="hero-hp-fill" class="hp-fill"></div>
+            </div>
+          </div>
+
+          <!-- Time Bar Group -->
+          <div class="time-group">
+            <div style="font-size: 8px; color: #bbb; width: 30px">ATB</div>
+            <div class="time-bar-frame">
+              <div id="hero-atb-fill" class="time-bar-fill"></div>
+            </div>
+          </div>
+
+          <div class="point-display">
+            POINTS: <span id="point-count">0</span>
+          </div>
+        </div>
+
+        <!-- Enemy Status -->
+        <div class="status-box" style="align-items: flex-end">
+          <div class="name-tag" style="width: 100%">
+            <span id="enemy-hp-text">100/100</span>
+            <span>MONSTER</span>
+          </div>
+
+          <div class="hp-group" style="width: 100%">
+            <div class="bar-frame">
+              <div
+                id="enemy-hp-fill"
+                class="hp-fill"
+                style="background: linear-gradient(90deg, #8e44ad, #9b59b6)"
+              ></div>
+            </div>
+          </div>
+
+          <!-- Enemy Time Bar -->
+          <div
+            class="time-group"
+            style="width: 100%; flex-direction: row-reverse"
+          >
+            <div
+              style="
+                font-size: 8px;
+                color: #bbb;
+                width: 30px;
+                text-align: right;
+              "
+            >
+              ATB
+            </div>
+            <div class="time-bar-frame">
+              <div
+                id="enemy-atb-fill"
+                class="time-bar-fill enemy-time-fill"
+              ></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Characters -->
+      <div id="hero" class="character-container">
+        <div class="sprite-head">
+          <div class="sprite-eye eye-left"></div>
+          <div class="sprite-eye eye-right"></div>
+        </div>
+        <div class="sprite-body">
+          <div id="color-timer" class="sprite-timer"></div>
+          <div class="sprite-pattern"></div>
+        </div>
+        <div id="beam" class="beam-effect"></div>
+      </div>
+
+      <div id="enemy" class="character-container">
+        <div class="sprite-horn"></div>
+        <div class="sprite-head">
+          <div class="sprite-eye eye-left"></div>
+          <div class="sprite-eye eye-right"></div>
+        </div>
+        <div class="sprite-body"></div>
+      </div>
+
+      <!-- Split UI Panel -->
+      <div id="quiz-panel">
+        <!-- Left: Quiz -->
+        <div id="quiz-left" style="opacity: 0.5; pointer-events: none">
+          <!-- Disabled by default -->
+          <div
+            style="
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              margin-bottom: 5px;
+            "
+          >
+            <div style="font-size: 12px; color: #aaa">TIME LEFT</div>
+            <div
+              id="quiz-time-text"
+              style="font-size: 14px; font-weight: bold; color: #fff"
+            >
+              10.0
+            </div>
+          </div>
+          <div id="question-display">...</div>
+          <div class="quiz-timer-bar">
+            <div id="quiz-timer-fill" class="quiz-timer-fill"></div>
+          </div>
+          <div id="options-grid" style="margin-top: 10px">
+            <button class="option-btn" onclick="checkAnswer(0)">A</button>
+            <button class="option-btn" onclick="checkAnswer(1)">B</button>
+            <button class="option-btn" onclick="checkAnswer(2)">C</button>
+            <button class="option-btn" onclick="checkAnswer(3)">D</button>
+          </div>
+        </div>
+
+        <!-- Right: Actions -->
+        <div id="action-right">
+          <button
+            id="btn-attack"
+            class="action-btn"
+            onclick="triggerManualAttack()"
+          >
+            ATTACK
+            <span class="cost-badge">1 POINT</span>
+          </button>
+          <button
+            id="btn-finisher"
+            class="action-btn"
+            onclick="triggerManualFinisher()"
+          >
+            ULTRA BEAM
+            <span class="cost-badge">2 POINTS</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // --- CHARACTERS ---
+      const characters = [
+        { id: "c1", name: "ULTRA MAN", color: "#e74c3c", secondary: "#ecf0f1" },
+        {
+          id: "c2",
+          name: "ULTRA TIGA",
+          color: "#9b59b6",
+          secondary: "#f1c40f",
+        },
+        {
+          id: "c3",
+          name: "ULTRA ZERO",
+          color: "#3498db",
+          secondary: "#e74c3c",
+        },
+        {
+          id: "c4",
+          name: "ULTRA TARO",
+          color: "#c0392b",
+          secondary: "#ecf0f1",
+        },
+      ];
+
+      // --- QUESTIONS ---
+      const questions = [
+        { q: "4 + 4 = ?", a: ["6", "7", "8", "9"], c: 2 },
+        { q: "Banana แปลว่า?", a: ["กล้วย", "แอปเปิล", "มะม่วง", "ส้ม"], c: 0 },
+        {
+          q: "จังหวัดใดอยู่ภาคเหนือ?",
+          a: ["ยะลา", "ชลบุรี", "เชียงราย", "ภูเก็ต"],
+          c: 2,
+        },
+        { q: "10 - 3 = ?", a: ["7", "6", "5", "8"], c: 0 },
+        {
+          q: "Red + Blue = ?",
+          a: ["Green", "Purple", "Orange", "Yellow"],
+          c: 1,
+        },
+        {
+          q: "สัตว์ประจำชาติไทยคือ?",
+          a: ["ช้าง", "เสือ", "สิงโต", "หมีแพนด้า"],
+          c: 0,
+        },
+        { q: "ใครเป็นพี่ของพ่อ?", a: ["น้า", "อา", "ลุง/ป้า", "พี่ชาย"], c: 2 },
+        { q: "5 x 5 = ?", a: ["20", "25", "30", "15"], c: 1 },
+        {
+          q: "คำว่า 'กิน' ภาษาอังกฤษ?",
+          a: ["Walk", "Sleep", "Eat", "Run"],
+          c: 2,
+        },
+        { q: "ธงชาติไทยมีกี่สี?", a: ["3 สี", "4 สี", "5 สี", "2 สี"], c: 0 },
+      ];
+
+      // --- AUDIO ---
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      function playTone(freq, type, dur) {
+        if (audioCtx.state === "suspended") audioCtx.resume();
+        const o = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        o.type = type;
+        o.frequency.value = freq;
+        g.gain.value = 0.1;
+        g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur);
+        o.connect(g);
+        g.connect(audioCtx.destination);
+        o.start();
+        o.stop(audioCtx.currentTime + dur);
+      }
+      function sfxCharge() {
+        playTone(300, "sine", 0.1);
+        setTimeout(() => playTone(500, "sine", 0.2), 100);
+      }
+      function sfxAttack() {
+        playTone(600, "sawtooth", 0.1);
+        setTimeout(() => playTone(400, "sawtooth", 0.3), 100);
+      }
+      function sfxFinisher() {
+        playTone(200, "square", 0.1);
+        setTimeout(() => playTone(800, "square", 1.5), 100);
+      }
+      function sfxError() {
+        playTone(150, "sawtooth", 0.3);
+        setTimeout(() => playTone(100, "sawtooth", 0.3), 200);
+      }
+      function sfxPoint() {
+        playTone(880, "sine", 0.1);
+        setTimeout(() => playTone(1100, "sine", 0.2), 100);
+      }
+
+      // --- GAME STATE ---
+      let heroHP = 100;
+      let enemyHP = 100;
+      let points = 0;
+
+      // ATB State
+      let heroATB = 0; // 0 to 100
+      let enemyATB = 0; // 0 to 100
+      let heroSpeedBase = 0.5; // Balanced speed
+      let enemySpeedBase = 0.35;
+      let heroSpeedMod = 1.0; // Multiplier changed by answers
+
+      let isGameRunning = false;
+      let isPlayerTurn = false; // "Quiz Mode"
+      let quizTime = 10; // 10 seconds for quiz
+      let currentQuizTime = 10;
+      let quizTimerInterval;
+
+      let currentQIndex = 0;
+      let btnDisabled = false; // Prevent double clicking
+
+      // Elements
+      const el = (id) => document.getElementById(id);
+      const heroEl = el("hero");
+      const enemyEl = el("enemy");
+      const beamEl = el("beam");
+      const heroNameEl = el("hero-name");
+
+      const btnAttack = el("btn-attack");
+      const btnFinisher = el("btn-finisher");
+      const quizPanel = el("quiz-left");
+      const quizTimeFill = el("quiz-timer-fill");
+
+      // --- SELECTION ---
+      function showSelectionScreen() {
+        el("start-screen").classList.add("hidden");
+        el("selection-screen").classList.remove("hidden");
+        const grid = el("char-grid");
+        grid.innerHTML = "";
+        characters.forEach((char) => {
+          const btn = document.createElement("div");
+          btn.style.background = char.color;
+          btn.style.padding = "20px";
+          btn.style.borderRadius = "10px";
+          btn.style.cursor = "pointer";
+          btn.style.border = "4px solid white";
+          btn.style.textAlign = "center";
+          btn.style.fontFamily = "var(--font-pixel)";
+          btn.style.fontSize = "12px";
+          btn.innerHTML = `<div style="width:40px; height:40px; background:${char.secondary}; margin:0 auto 10px auto; border-radius:50%;"></div>${char.name}`;
+          btn.onclick = () => startGame(char);
+          btn.onmouseover = () => (btn.style.transform = "scale(1.1)");
+          btn.onmouseout = () => (btn.style.transform = "scale(1)");
+          btn.style.transition = "transform 0.1s";
+          grid.appendChild(btn);
+        });
+      }
+
+      function startGame(char) {
+        el("selection-screen").classList.add("hidden");
+        heroNameEl.innerText = char.name;
+        document.documentElement.style.setProperty("--hero-color", char.color);
+        document.documentElement.style.setProperty(
+          "--hero-secondary",
+          char.secondary
+        );
+
+        // Reset Stats
+        heroHP = 100;
+        enemyHP = 100;
+        points = 0;
+        heroATB = 20; // Start with slight advantage
+        enemyATB = 0;
+        heroSpeedMod = 1.0;
+        isPlayerTurn = false;
+        isGameRunning = true;
+
+        updateUI();
+        gameLoop();
+      }
+
+      // --- MAIN LOOP ---
+      function gameLoop() {
+        if (!isGameRunning) return;
+
+        // Only charge bars if Game is running AND it is NOT Player Turn
+        if (!isPlayerTurn) {
+          // Charge Hero
+          let currentHeroSpeed = heroSpeedBase * heroSpeedMod;
+          heroATB += currentHeroSpeed;
+          if (heroATB >= 100) {
+            heroATB = 100;
+            startPlayerTurn();
+          }
+
+          // Charge Enemy (Only if Player not acting)
+          // Note: User requirement says "During answer turn... enemy charge pauses".
+          // So if !isPlayerTurn, enemy charges.
+          enemyATB += enemySpeedBase;
+          if (enemyATB >= 100) {
+            enemyATB = 0;
+            performEnemyAttack();
+          }
+        }
+
+        updateUI();
+        requestAnimationFrame(gameLoop);
+      }
+
+      // --- TURN LOGIC ---
+      function startPlayerTurn() {
+        if (heroHP <= 0 || enemyHP <= 0) return;
+        isPlayerTurn = true;
+
+        // Enable Quiz UI
+        quizPanel.style.opacity = "1";
+        quizPanel.style.pointerEvents = "auto";
+
+        // Load Question
+        const qIdx = Math.floor(Math.random() * questions.length);
+        currentQIndex = qIdx;
+        el("question-display").innerText = questions[qIdx].q;
+        const btns = document.querySelectorAll(".option-btn");
+        btns.forEach((b, i) => {
+          b.innerText = questions[qIdx].a[i];
+          b.style.background = "#34495e";
+        });
+
+        // Start 10s Timer
+        currentQuizTime = 10;
+        updateQuizTimer();
+        if (quizTimerInterval) clearInterval(quizTimerInterval);
+        quizTimerInterval = setInterval(() => {
+          currentQuizTime -= 0.1;
+          updateQuizTimer();
+          if (currentQuizTime <= 0) {
+            clearInterval(quizTimerInterval);
+            handleAnswer(false); // Time out = Wrong
+          }
+        }, 100);
+      }
+
+      function updateQuizTimer() {
+        let pct = (currentQuizTime / 10) * 100;
+        quizTimeFill.style.width = pct + "%";
+
+        const timeText = document.getElementById("quiz-time-text");
+        if (timeText) timeText.innerText = currentQuizTime.toFixed(1);
+
+        if (pct < 30) quizTimeFill.style.background = "red";
+        else quizTimeFill.style.background = "#00bcd4";
+      }
+
+      function checkAnswer(idx) {
+        if (!isPlayerTurn) return; // Basic safety
+        clearInterval(quizTimerInterval);
+
+        const btns = document.querySelectorAll(".option-btn");
+        const isCorrect = idx === questions[currentQIndex].c;
+
+        if (isCorrect) btns[idx].style.background = "#27ae60";
+        else btns[idx].style.background = "#c0392b";
+
+        setTimeout(() => handleAnswer(isCorrect), 500);
+      }
+
+      function handleAnswer(isCorrect) {
+        // Apply Effects
+        if (isCorrect) {
+          points++;
+          showFloatingText("+1 PT! SPEED UP!");
+          heroSpeedMod += 0.05; // 5% faster
+          sfxPoint();
+        } else {
+          showFloatingText("WRONG! SPEED DOWN...");
+          heroSpeedMod -= 0.05; // 5% slower
+          if (heroSpeedMod < 0.5) heroSpeedMod = 0.5; // Cap min speed
+          sfxError();
+        }
+
+        // End Turn
+        endPlayerTurn();
+      }
+
+      function endPlayerTurn() {
+        isPlayerTurn = false;
+        heroATB = 0; // Reset Hero Bar
+
+        // Disable Quiz UI
+        quizPanel.style.opacity = "0.5";
+        quizPanel.style.pointerEvents = "none";
+      }
+
+      function updateUI() {
+        // Status Bars
+        el("hero-hp-fill").style.width = heroHP + "%";
+        el("enemy-hp-fill").style.width = enemyHP + "%";
+        el("hero-hp-text").innerText = Math.ceil(heroHP) + "/100";
+        el("enemy-hp-text").innerText = Math.ceil(enemyHP) + "/100";
+
+        // ATB Bars
+        el("hero-atb-fill").style.width = heroATB + "%";
+        el("enemy-atb-fill").style.width = enemyATB + "%";
+
+        el("point-count").innerText = points;
+
+        // Health color
+        if (heroHP < 30) el("color-timer").classList.add("timer-critical");
+        else el("color-timer").classList.remove("timer-critical");
+
+        // Buttons Availability (Can be used anytime IF points exist)
+        // Or should we only allow during turn?
+        // The prompt implies we accumulate points to use them.
+        // Let's allow using them anytime for maximum tactical flexibility.
+        if (points >= 1) btnAttack.classList.add("ready");
+        else btnAttack.classList.remove("ready");
+
+        if (enemyHP < 25 && points >= 2) {
+          btnFinisher.style.display = "flex";
+          btnFinisher.classList.add("ready");
+          el("finisher-text").classList.remove("hidden");
+        } else {
+          btnFinisher.style.display = "none";
+          el("finisher-text").classList.add("hidden");
+        }
+      }
+
+      // --- ACTIONS ---
+      function triggerManualAttack() {
+        if (points < 1) return;
+        points--;
+
+        // Hero Attack Animation
+        heroEl.classList.add("attack-dash");
+        sfxAttack();
+        beamEl.style.animation = "beamShoot 0.5s forwards";
+
+        setTimeout(() => {
+          enemyEl.classList.add("damage-shake");
+          let dmg = 20;
+          if (enemyHP - dmg <= 0) enemyHP = 1;
+          else enemyHP -= dmg;
+          updateUI();
+
+          setTimeout(() => {
+            heroEl.classList.remove("attack-dash");
+            enemyEl.classList.remove("damage-shake");
+            beamEl.style.animation = "none";
+          }, 500);
+        }, 300);
+      }
+
+      function triggerManualFinisher() {
+        if (points < 2 || enemyHP >= 25) return;
+        points -= 2;
+        isGameRunning = false; // Stop everything
+        el("finisher-text").classList.add("hidden");
+
+        heroEl.classList.add("attack-charge");
+        sfxFinisher();
+
+        setTimeout(() => {
+          beamEl.className = "beam-effect spacium-beam";
+          beamEl.style.animation = "spaciumShoot 1.5s forwards";
+
+          setTimeout(() => {
+            enemyEl.style.transition = "transform 0.5s, opacity 0.5s";
+            enemyEl.style.transform = "scale(0) rotate(360deg)";
+            enemyEl.style.opacity = "0";
+            enemyHP = 0;
+            updateUI();
+            setTimeout(() => endGame(true), 1500);
+          }, 500);
+        }, 500);
+      }
+
+      function performEnemyAttack() {
+        enemyEl.classList.add("enemy-dash");
+        sfxError();
+        setTimeout(() => {
+          heroEl.classList.add("damage-shake");
+          heroHP -= 15;
+          if (heroHP <= 0) {
+            heroHP = 0;
+            updateUI();
+            setTimeout(() => endGame(false), 1000);
+          }
+          updateUI();
+          setTimeout(() => {
+            enemyEl.classList.remove("enemy-dash");
+            heroEl.classList.remove("damage-shake");
+          }, 500);
+        }, 300);
+      }
+
+      function showFloatingText(text) {
+        const floatEl = document.createElement("div");
+        floatEl.className = "point-float";
+        floatEl.innerText = text;
+        floatEl.style.left = "50%";
+        floatEl.style.top = "40%";
+        el("game-wrapper").appendChild(floatEl);
+        setTimeout(() => floatEl.remove(), 1000);
+      }
+
+      function endGame(win) {
+        isGameRunning = false;
+        clearInterval(quizTimerInterval);
+        el("end-screen").classList.remove("hidden");
+        if (win) {
+          el("end-title").innerText = "MISSION COMPLETE!";
+          el("end-title").style.color = "#f1c40f";
+          el("end-msg").innerText = "คุณปกป้องโลกสำเร็จแล้ว!";
+        } else {
+          el("end-title").innerText = "GAME OVER";
+          el("end-title").style.color = "#e74c3c";
+          el("end-msg").innerText = "ลองใหม่อีกครั้งนะ...";
+        }
+      }
+    </script>
   </body>
 </html>
