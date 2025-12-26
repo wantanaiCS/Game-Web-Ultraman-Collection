@@ -1199,10 +1199,15 @@
         if (points >= 1) btnAttack.classList.add("ready");
         else btnAttack.classList.remove("ready");
 
-        if (enemyHP < 25 && points >= 2) {
-          btnFinisher.style.display = "flex";
-          btnFinisher.classList.add("ready");
-          el("finisher-text").classList.remove("hidden");
+        if (enemyHP < 30) {
+          btnFinisher.style.display = "flex"; // Show immediately
+          if (points >= 2) {
+            btnFinisher.classList.add("ready");
+            el("finisher-text").classList.remove("hidden");
+          } else {
+            btnFinisher.classList.remove("ready");
+            el("finisher-text").classList.add("hidden");
+          }
         } else {
           btnFinisher.style.display = "none";
           el("finisher-text").classList.add("hidden");
@@ -1235,7 +1240,7 @@
       }
 
       function triggerManualFinisher() {
-        if (points < 2 || enemyHP >= 25) return;
+        if (points < 2 || enemyHP >= 30) return;
         points -= 2;
         isGameRunning = false; // Stop everything
         el("finisher-text").classList.add("hidden");
